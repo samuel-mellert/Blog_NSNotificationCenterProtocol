@@ -1,80 +1,71 @@
 import Foundation
 
-// MARK: - Protocol
-
+// MARK: - Notifier Protocol
 public protocol Notifier {
+    
     associatedtype Notification: RawRepresentable
+    
 }
 
+// MARK: - Notifier base implementation
 public extension Notifier where Notification.RawValue == String {
     
-    // MARK: - Static Computed Variables
-    
-    private static func nameFor(notification: Notification) -> String {
-        return "\(self).\(notification.rawValue)"
+    // MARK: Calculated notification name
+    private static func notificationName(for notification: Notification) -> NSNotification.Name {
+        return NSNotification.Name(rawValue: "\(self).\(notification.rawValue)")
     }
     
-    
-    // MARK: - Instance Methods
-    
-    // Pot
-    
-    func postNotification(notification: Notification, object: AnyObject? = nil) {
-        Self.postNotification(notification, object: object)
+    // MARK: Add observer
+    static func addObserver(_ observer: AnyObject, selector: Selector, notification: Notification) {
+        let name = notificationName(for: notification)
+        
+        NotificationCenter.default.addObserver(observer, selector: selector, name: name, object: nil)
     }
     
-    func postNotification(notification: Notification, object: AnyObject? = nil, userInfo: [String : AnyObject]? = nil) {
+    // MARK: Post notification
+    static func postNotification(_ notification: Notification, object: AnyObject? = nil, userInfo: [String : AnyObject]? = nil) {
+        let name = notificationName(for: notification)
+        
+        NotificationCenter.default.post(name: name, object: object, userInfo: userInfo)
+    }
+    
+    func postNotification(_ notification: Notification, object: AnyObject? = nil, userInfo: [String : AnyObject]? = nil) {
         Self.postNotification(notification, object: object, userInfo: userInfo)
     }
     
-    
-    // MARK: - Static Function
-    
-    // Post
-    
-    static func postNotification(notification: Notification, object: AnyObject? = nil, userInfo: [String : AnyObject]? = nil) {
-        let name = nameFor(notification)
-        
-        NSNotificationCenter.defaultCenter()
-            .postNotificationName(name, object: object, userInfo: userInfo)
+    // MARK: Remove observer
+    static func removeObserver(_ observer: Any, notification: Notification? = nil) {
+        if let notification = notification {
+            NotificationCenter.default.removeObserver(observer, name: notificationName(for: notification), object: nil)
+        } else {
+            NotificationCenter.default.removeObserver(observer)
+        }
     }
     
-    // Add
-    
-    static func addObserver(observer: AnyObject, selector: Selector, notification: Notification) {
-        let name = nameFor(notification)
-        
-        NSNotificationCenter.defaultCenter()
-            .addObserver(observer, selector: selector, name: name, object: nil)
-    }
-    
-    // Remove
-    
-    static func removeObserver(observer: AnyObject, notification: Notification, object: AnyObject? = nil) {
-        let name = nameFor(notification)
-        
-        NSNotificationCenter.defaultCenter()
-            .removeObserver(observer, name: name, object: object)
-    }
 }
 
 
 // MARK: - Example
-
-class Barista : Notifier {
-    enum Notification : String {
+class Barista: Notifier {
+    
+    enum Notification: String {
         case makeCoffee
     }
+    
 }
 
 extension Selector {
+    
     static let makeCoffeeNotification = #selector(Customer.drink(_:))
+    
 }
 
 class Customer {
-    @objc func drink(notification: NSNotification) {
+    
+    @objc func drink(_ notification: NSNotification) {
         print("Mmm... Coffee")
     }
+    
 }
 
 
